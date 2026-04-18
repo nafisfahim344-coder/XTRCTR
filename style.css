@@ -87,6 +87,25 @@ nav {
     color: var(--accent);
 }
 
+.branding {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    background: rgba(255, 255, 255, 0.03);
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.author-name {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.company-name {
+    color: var(--accent);
+    font-weight: 600;
+}
+
 .nav-links {
     display: flex;
     gap: 2.5rem;
@@ -106,24 +125,84 @@ nav {
 
 /* Hero Section */
 .hero {
-    padding: 8rem 5% 4rem;
-    text-align: center;
-    max-width: 1000px;
+    padding: 6rem 5% 4rem;
+    max-width: 1200px;
     margin: 0 auto;
 }
 
-.hero p {
-    font-size: 1.25rem;
+.hero-container {
+    display: flex;
+    align-items: center;
+    gap: 4rem;
+    text-align: left;
+}
+
+.hero-content {
+    flex: 1;
+}
+
+.hero-3d {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+}
+
+#canvas-container {
+    width: 100%;
+    max-width: 500px;
+    height: 500px;
+}
+
+h1 {
+    margin-bottom: 0.5rem;
+}
+
+.glow-3d {
+    font-size: 5rem;
+    color: #fff;
+    text-transform: uppercase;
+    font-weight: 900;
+    text-shadow: 
+        0 0 10px rgba(108, 99, 255, 0.8),
+        0 0 20px rgba(108, 99, 255, 0.5),
+        0 0 40px rgba(108, 99, 255, 0.3);
+    animation: glow-pulse 3s infinite ease-in-out;
+}
+
+@keyframes glow-pulse {
+    0%, 100% { text-shadow: 0 0 10px rgba(108, 99, 255, 0.8), 0 0 20px rgba(108, 99, 255, 0.5); }
+    50% { text-shadow: 0 0 20px rgba(108, 99, 255, 1), 0 0 50px rgba(167, 139, 250, 0.8), 0 0 80px rgba(108, 99, 255, 0.6); }
+}
+
+.on-behalf {
+    font-size: 1.1rem;
     color: var(--text-secondary);
-    max-width: 600px;
-    margin: 0 auto 3rem;
+    margin-bottom: 2rem;
+}
+
+.keystone {
+    color: var(--accent);
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+h2 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: 1.5rem;
+}
+
+.hero-description {
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+    max-width: 500px;
+    margin-bottom: 2.5rem;
 }
 
 .hero-actions {
     display: flex;
     gap: 1.5rem;
-    justify-content: center;
-    margin-bottom: 5rem;
 }
 
 .btn-primary {

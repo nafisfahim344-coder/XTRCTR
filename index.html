@@ -18,33 +18,30 @@
     <header>
         <nav>
             <div class="logo">✦ XTRCTR</div>
+            <div class="branding">by <span class="author-name">Nafis Fahim</span> for <span class="company-name">Keystone Software</span></div>
             <div class="nav-links">
                 <a href="#features">Features</a>
                 <a href="https://github.com/nafisfahim344-coder/XTRCTR" target="_blank">GitHub</a>
-                <a href="https://github.com/nafisfahim344-coder/XTRCTR/releases/latest/download/XTRCTR_Portable.exe" class="btn-nav">Download Now</a>
+                <a href="https://github.com/nafisfahim344-coder/XTRCTR/releases/latest/download/XTRCTR_Portable.exe" class="btn-nav">Download</a>
             </div>
         </nav>
     </header>
 
     <main>
         <section class="hero">
-            <h1 class="animate-up">Extract PDF Pages with <span class="gradient-text">Precision.</span></h1>
-            <p class="animate-up delay-1">The fastest, most intelligent way to split, name, and compress your PDF sections. Portable, powerful, and free.</p>
-            <div class="hero-actions animate-up delay-2">
-                <a href="https://github.com/nafisfahim344-coder/XTRCTR/releases/latest/download/XTRCTR_Portable.exe" class="btn-primary">Download Portable EXE</a>
-                <a href="https://github.com/nafisfahim344-coder/XTRCTR" target="_blank" class="btn-secondary">View on GitHub</a>
-            </div>
-            <div class="hero-image animate-up delay-3">
-                <div class="mockup">
-                    <div class="mockup-header">
-                        <div class="dots"><span></span><span></span><span></span></div>
-                        <div class="mockup-title">XTRCTR.exe</div>
+            <div class="hero-container">
+                <div class="hero-content">
+                    <h1 class="animate-up"><span class="glow-3d">Nafis Fahim</span></h1>
+                    <p class="on-behalf animate-up">on behalf of <span class="keystone">Keystone Software</span></p>
+                    <h2 class="animate-up delay-1">Extract PDF Pages with <span class="gradient-text">Precision.</span></h2>
+                    <p class="hero-description animate-up delay-1">The fastest, most intelligent way to split, name, and compress your PDF sections. Portable, powerful, and free.</p>
+                    <div class="hero-actions animate-up delay-2">
+                        <a href="https://github.com/nafisfahim344-coder/XTRCTR/releases/latest/download/XTRCTR_Portable.exe" class="btn-primary">Download Portable EXE</a>
+                        <a href="https://github.com/nafisfahim344-coder/XTRCTR" target="_blank" class="btn-secondary">View on GitHub</a>
                     </div>
-                    <div class="mockup-content">
-                        <div class="mockup-line"></div>
-                        <div class="mockup-line short"></div>
-                        <div class="mockup-btn">EXTRACT & COMPRESS</div>
-                    </div>
+                </div>
+                <div class="hero-3d animate-up delay-3">
+                    <div id="canvas-container"></div>
                 </div>
             </div>
         </section>
@@ -69,15 +66,74 @@
     </main>
 
     <footer>
-        <p>&copy; 2024 XTRCTR. Built for efficiency.</p>
+        <p>&copy; 2024 XTRCTR. Developed by Nafis Fahim for Keystone Software.</p>
     </footer>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
+        // Animations for entrance
         document.querySelectorAll('.animate-up').forEach((el, i) => {
             setTimeout(() => {
                 el.classList.add('visible');
             }, 100 * i);
         });
+
+        // Three.js 3D Hero Scene
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        
+        const size = Math.min(container.offsetWidth, 500);
+        renderer.setSize(size, size);
+        container.appendChild(renderer.domElement);
+
+        // Create a geometric diamond shape
+        const geometry = new THREE.IcosahedronGeometry(2, 0);
+        const material = new THREE.MeshPhongMaterial({
+            color: 0x6C63FF,
+            wireframe: true,
+            emissive: 0x6C63FF,
+            emissiveIntensity: 0.5,
+            shininess: 100
+        });
+        const diamond = new THREE.Mesh(geometry, material);
+        scene.add(diamond);
+
+        // Inner glowing core
+        const coreGeom = new THREE.IcosahedronGeometry(1, 0);
+        const coreMat = new THREE.MeshBasicMaterial({ color: 0xA78BFA });
+        const core = new THREE.Mesh(coreGeom, coreMat);
+        scene.add(core);
+
+        const light = new THREE.PointLight(0xffffff, 1, 100);
+        light.position.set(10, 10, 10);
+        scene.add(light);
+        scene.add(new THREE.AmbientLight(0x404040));
+
+        camera.position.z = 5;
+
+        function animate() {
+            requestAnimationFrame(animate);
+            diamond.rotation.x += 0.01;
+            diamond.rotation.y += 0.01;
+            core.rotation.y -= 0.02;
+            
+            // Pulsing effect
+            const scale = 1 + Math.sin(Date.now() * 0.002) * 0.1;
+            diamond.scale.set(scale, scale, scale);
+            
+            renderer.render(scene, camera);
+        }
+        
+        window.addEventListener('resize', () => {
+            const newSize = Math.min(container.offsetWidth, 500);
+            renderer.setSize(newSize, newSize);
+            camera.aspect = 1;
+            camera.updateProjectionMatrix();
+        });
+
+        animate();
     </script>
 </body>
 </html>
