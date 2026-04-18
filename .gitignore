@@ -1,0 +1,18 @@
+# Compiled Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# PyInstaller build files
+build/
+dist/
+*.spec
+
+# PDF outputs
+output/
+*.pdf
+*.zip
+
+# OS files
+.DS_Store
+Thumbs.db
