@@ -10,9 +10,12 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="glow-container">
-        <div class="glow glow-1"></div>
-        <div class="glow glow-2"></div>
+    <div class="background-layers">
+        <div class="glow-container">
+            <div class="glow glow-1"></div>
+            <div class="glow glow-2"></div>
+        </div>
+        <div class="grid-overlay"></div>
     </div>
 
     <header>
@@ -84,44 +87,87 @@
         const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         
-        const size = Math.min(container.offsetWidth, 500);
+        let size = Math.min(container.offsetWidth, 500);
         renderer.setSize(size, size);
+        renderer.setPixelRatio(window.devicePixelRatio);
         container.appendChild(renderer.domElement);
 
-        // Create a geometric diamond shape
-        const geometry = new THREE.IcosahedronGeometry(2, 0);
+        // Group to hold our shapes for easy rotation
+        const group = new THREE.Group();
+        scene.add(group);
+
+        // Create a geometric diamond shape (Outer)
+        const geometry = new THREE.IcosahedronGeometry(2.2, 0);
         const material = new THREE.MeshPhongMaterial({
             color: 0x6C63FF,
             wireframe: true,
+            transparent: true,
+            opacity: 0.4,
             emissive: 0x6C63FF,
-            emissiveIntensity: 0.5,
-            shininess: 100
+            emissiveIntensity: 0.8
         });
         const diamond = new THREE.Mesh(geometry, material);
-        scene.add(diamond);
+        group.add(diamond);
 
         // Inner glowing core
-        const coreGeom = new THREE.IcosahedronGeometry(1, 0);
-        const coreMat = new THREE.MeshBasicMaterial({ color: 0xA78BFA });
+        const coreGeom = new THREE.OctahedronGeometry(1.2, 0);
+        const coreMat = new THREE.MeshStandardMaterial({ 
+            color: 0x00F2FF, 
+            emissive: 0x00F2FF,
+            emissiveIntensity: 1,
+            metalness: 1,
+            roughness: 0
+        });
         const core = new THREE.Mesh(coreGeom, coreMat);
-        scene.add(core);
+        group.add(core);
 
-        const light = new THREE.PointLight(0xffffff, 1, 100);
-        light.position.set(10, 10, 10);
-        scene.add(light);
-        scene.add(new THREE.AmbientLight(0x404040));
+        // Add some floating particles
+        const particlesGeom = new THREE.BufferGeometry();
+        const particlesCount = 100;
+        const posArray = new Float32Array(particlesCount * 3);
+        for(let i=0; i < particlesCount * 3; i++) {
+            posArray[i] = (Math.random() - 0.5) * 10;
+        }
+        particlesGeom.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+        const particlesMat = new THREE.PointsMaterial({ size: 0.05, color: 0xA78BFA });
+        const particles = new THREE.Points(particlesGeom, particlesMat);
+        scene.add(particles);
 
-        camera.position.z = 5;
+        const pointLight = new THREE.PointLight(0xffffff, 1.5, 100);
+        pointLight.position.set(5, 5, 5);
+        scene.add(pointLight);
+        scene.add(new THREE.AmbientLight(0x202020));
+
+        camera.position.z = 6;
+
+        // Mouse interaction
+        let mouseX = 0;
+        let mouseY = 0;
+        let targetX = 0;
+        let targetY = 0;
+
+        window.addEventListener('mousemove', (e) => {
+            mouseX = (e.clientX - window.innerWidth / 2) / 100;
+            mouseY = (e.clientY - window.innerHeight / 2) / 100;
+        });
 
         function animate() {
             requestAnimationFrame(animate);
-            diamond.rotation.x += 0.01;
-            diamond.rotation.y += 0.01;
-            core.rotation.y -= 0.02;
             
-            // Pulsing effect
-            const scale = 1 + Math.sin(Date.now() * 0.002) * 0.1;
-            diamond.scale.set(scale, scale, scale);
+            targetX = mouseX * 0.5;
+            targetY = mouseY * 0.5;
+
+            group.rotation.y += 0.005 + (targetX - group.rotation.y) * 0.05;
+            group.rotation.x += 0.005 + (targetY - group.rotation.x) * 0.05;
+            
+            particles.rotation.y -= 0.001;
+            
+            const time = Date.now() * 0.001;
+            core.scale.set(
+                1 + Math.sin(time * 2) * 0.1,
+                1 + Math.sin(time * 2) * 0.1,
+                1 + Math.sin(time * 2) * 0.1
+            );
             
             renderer.render(scene, camera);
         }
