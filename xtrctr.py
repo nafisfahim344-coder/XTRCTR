@@ -340,9 +340,14 @@ class XTRCTRApp(ctk.CTk):
     # UI CONSTRUCTION
     # --------------------------------------------------------
     def _build_ui(self):
-        # Main container with padding
-        self.main_frame = ctk.CTkFrame(self, fg_color="transparent")
-        self.main_frame.pack(fill="both", expand=True, padx=24, pady=16)
+        # Main container with padding - Now Scrollable for small displays
+        self.main_frame = ctk.CTkScrollableFrame(
+            self, 
+            fg_color="transparent",
+            scrollbar_button_color=ACCENT_PRIMARY,
+            scrollbar_button_hover_color=ACCENT_SECONDARY
+        )
+        self.main_frame.pack(fill="both", expand=True, padx=12, pady=12)
 
         # ---- Header ----
         header = ctk.CTkFrame(self.main_frame, fg_color="transparent")
