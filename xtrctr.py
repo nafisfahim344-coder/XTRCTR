@@ -786,7 +786,7 @@ class XTRCTRApp(ctk.CTk):
             item_frame = ctk.CTkFrame(self.files_scroll_frame, fg_color="transparent")
             item_frame.pack(fill="x", pady=2)
 
-            # Left side: Remove button
+            # 1. Remove button
             btn_remove = ctk.CTkButton(
                 item_frame,
                 text="❌",
@@ -801,28 +801,54 @@ class XTRCTRApp(ctk.CTk):
             )
             btn_remove.pack(side="left", padx=(4, 0))
 
-            # Icon and Name
+            # 2. Name
             name_label = ctk.CTkLabel(
                 item_frame,
                 text=f"📄 {name}",
                 font=ctk.CTkFont(size=13, weight="bold"),
                 text_color=TEXT_PRIMARY,
                 anchor="w",
-                width=260,
+                width=200,
             )
-            name_label.pack(side="left", padx=(8, 12))
+            name_label.pack(side="left", padx=(8, 4))
 
-            # Middle: Page count
+            # 3. Output Folder Button
+            btn_folder = ctk.CTkButton(
+                item_frame,
+                text="📂",
+                font=ctk.CTkFont(size=12),
+                fg_color="transparent",
+                text_color=ACCENT_PRIMARY,
+                hover_color=BG_DARK,
+                width=28,
+                height=28,
+                corner_radius=6,
+                command=lambda p=pdf_path: self._select_output_for_file(p),
+            )
+            btn_folder.pack(side="left")
+
+            # 4. Folder Label (mini)
+            folder_label = ctk.CTkLabel(
+                item_frame,
+                text="Default",
+                font=ctk.CTkFont(size=10),
+                text_color=TEXT_MUTED,
+                width=80,
+                anchor="w",
+            )
+            folder_label.pack(side="left", padx=(2, 8))
+
+            # 5. Page count
             count_label = ctk.CTkLabel(
                 item_frame,
                 text=f"({page_count} pgs)",
                 font=ctk.CTkFont(size=11),
                 text_color=TEXT_MUTED,
-                width=60,
+                width=55,
             )
             count_label.pack(side="left")
 
-            # Right side: Entry field
+            # 6. Entry field
             entry = ctk.CTkEntry(
                 item_frame,
                 placeholder_text="e.g. 1, 3-5, all",
@@ -832,13 +858,15 @@ class XTRCTRApp(ctk.CTk):
                 height=32,
                 corner_radius=8,
             )
-            entry.pack(side="right", padx=(12, 8), fill="x", expand=True)
-            entry.insert(0, "all") # Default to 'all'
+            entry.pack(side="right", padx=(8, 8), fill="x", expand=True)
+            entry.insert(0, "all")
 
             self.file_items.append({
                 "path": pdf_path,
                 "entry": entry,
-                "pages": page_count
+                "pages": page_count,
+                "output_dir": "", # Specific override
+                "folder_label": folder_label
             })
 
     def _apply_first_range_to_all(self):
@@ -851,6 +879,21 @@ class XTRCTRApp(ctk.CTk):
             item["entry"].delete(0, "end")
             item["entry"].insert(0, first_val)
         self._log(f"Applied range '{first_val}' to all files.")
+
+    def _select_output_for_file(self, pdf_path: str):
+        """Browse for a specific output folder for one file."""
+        folder = filedialog.askdirectory(title=f"Output Folder for {os.path.basename(pdf_path)}")
+        if folder:
+            for item in self.file_items:
+                if item["path"] == pdf_path:
+                    item["output_dir"] = folder
+                    # Update label with shortened path
+                    display = os.path.basename(folder)
+                    if not display: # Root folder
+                        display = folder
+                    item["folder_label"].configure(text=display, text_color=ACCENT_SUCCESS)
+                    self._log(f"Target folder for {os.path.basename(pdf_path)}: {folder}")
+                    break
 
     # --------------------------------------------------------
     # EXTRACTION LOGIC
@@ -869,16 +912,23 @@ class XTRCTRApp(ctk.CTk):
         for item in self.file_items:
             path = item["path"]
             page_text = item["entry"].get().strip()
+            out_dir_override = item["output_dir"]
+            
             if not page_text:
                 messagebox.showwarning(
                     "Missing Input", 
                     f"Please enter pages for {os.path.basename(path)} or remove it."
                 )
                 return
-            extraction_plan.append((path, page_text))
+            
+            extraction_plan.append({
+                "path": path,
+                "pages": page_text,
+                "out_dir": out_dir_override
+            })
 
         # Verify files still exist
-        missing = [f for f, _ in extraction_plan if not os.path.isfile(f)]
+        missing = [p["path"] for p in extraction_plan if not os.path.isfile(p["path"])]
         if missing:
             messagebox.showerror("Missing Files", f"These files no longer exist:\n{chr(10).join(missing)}")
             return
@@ -892,12 +942,15 @@ class XTRCTRApp(ctk.CTk):
         thread = threading.Thread(target=self._extraction_worker, args=(extraction_plan,), daemon=True)
         thread.start()
 
-    def _extraction_worker(self, extraction_plan: list[tuple[str, str]]):
+    def _extraction_worker(self, extraction_plan: list[dict]):
         try:
             total_pdfs = len(extraction_plan)
             all_results = []
 
-            for pdf_idx, (pdf_path, page_text) in enumerate(extraction_plan):
+            for pdf_idx, item in enumerate(extraction_plan):
+                pdf_path = item["path"]
+                page_text = item["pages"]
+                pdf_out_override = item["out_dir"]
                 pdf_name = os.path.basename(pdf_path)
                 base_name = os.path.splitext(pdf_name)[0]
                 self._log(f"━━━ Processing: {pdf_name} ━━━")
@@ -922,7 +975,10 @@ class XTRCTRApp(ctk.CTk):
                     continue
 
                 # Determine output directory
-                if self.output_dir:
+                # Priority: 1. Per-file override, 2. Global output_dir, 3. Input folder
+                if pdf_out_override:
+                    out_dir = pdf_out_override
+                elif self.output_dir:
                     out_dir = self.output_dir
                 else:
                     out_dir = os.path.dirname(pdf_path)
