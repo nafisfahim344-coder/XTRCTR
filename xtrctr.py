@@ -330,6 +330,7 @@ class XTRCTRApp(ctk.CTk):
 
         # State
         self.loaded_pdfs: list[str] = []
+        self.file_items: list[dict] = []  # List of {path: str, entry: CTkEntry, label: CTkLabel}
         self.output_dir: str = ""
         self.is_processing = False
 
@@ -374,15 +375,30 @@ class XTRCTRApp(ctk.CTk):
 
         self.btn_select = ctk.CTkButton(
             file_inner,
-            text="📁  Browse PDF Files",
+            text="➕  Add PDF Files",
             font=ctk.CTkFont(size=14, weight="bold"),
             fg_color=ACCENT_PRIMARY,
             hover_color=ACCENT_SECONDARY,
             height=42,
+            width=160,
             corner_radius=10,
             command=self._select_files,
         )
         self.btn_select.pack(side="left")
+
+        self.btn_clear = ctk.CTkButton(
+            file_inner,
+            text="🗑️ Clear All",
+            font=ctk.CTkFont(size=12),
+            fg_color="#334155",
+            hover_color=ACCENT_DANGER,
+            height=32,
+            width=100,
+            corner_radius=8,
+            command=self._clear_files,
+        )
+        # We'll pack it only when files are loaded
+        self.btn_clear.pack_forget()
 
         self.file_label = ctk.CTkLabel(
             file_inner,
@@ -395,32 +411,43 @@ class XTRCTRApp(ctk.CTk):
         self.file_label.pack(side="left", padx=(16, 0), fill="x", expand=True)
 
         # ---- Step 2: Page Selection ----
-        self._make_section_header(self.main_frame, "② Enter Pages to Extract")
-
-        page_card = ctk.CTkFrame(self.main_frame, fg_color=BG_CARD, corner_radius=12)
-        page_card.pack(fill="x", pady=(0, 14))
-
-        page_inner = ctk.CTkFrame(page_card, fg_color="transparent")
-        page_inner.pack(fill="x", padx=16, pady=14)
-
-        self.page_entry = ctk.CTkEntry(
-            page_inner,
-            placeholder_text="e.g.  1, 3, 5-10, 15-20",
-            font=ctk.CTkFont(size=14),
-            fg_color=BG_INPUT,
-            border_color=ACCENT_PRIMARY,
-            height=42,
-            corner_radius=10,
+        self.step2_header = ctk.CTkFrame(self.main_frame, fg_color="transparent")
+        self.step2_header.pack(fill="x", pady=(8, 4))
+        
+        self._make_section_header(self.step2_header, "② Enter Pages to Extract", pack=False)
+        self.btn_apply_all = ctk.CTkButton(
+            self.step2_header,
+            text="📋 Apply first to all",
+            font=ctk.CTkFont(size=11, weight="bold"),
+            fg_color="transparent",
+            text_color=ACCENT_SECONDARY,
+            hover_color=BG_CARD,
+            height=24,
+            width=120,
+            command=self._apply_first_range_to_all,
         )
-        self.page_entry.pack(fill="x")
+        # Hidden initially
+        
+        self.page_card = ctk.CTkFrame(self.main_frame, fg_color=BG_CARD, corner_radius=12)
+        self.page_card.pack(fill="x", pady=(0, 14))
 
-        hint = ctk.CTkLabel(
-            page_inner,
-            text="Comma-separated pages or ranges. Each selection becomes a separate PDF.",
-            font=ctk.CTkFont(size=11),
+        # We'll use a scrollable frame for the file list
+        self.files_scroll_frame = ctk.CTkScrollableFrame(
+            self.page_card,
+            fg_color="transparent",
+            height=200,
+            scrollbar_button_color=ACCENT_PRIMARY,
+            scrollbar_button_hover_color=ACCENT_SECONDARY,
+        )
+        self.files_scroll_frame.pack(fill="x", padx=4, pady=4)
+
+        self.empty_files_label = ctk.CTkLabel(
+            self.files_scroll_frame,
+            text="Please select PDF files first...",
+            font=ctk.CTkFont(size=13, slant="italic"),
             text_color=TEXT_MUTED,
         )
-        hint.pack(anchor="w", pady=(6, 0))
+        self.empty_files_label.pack(pady=40)
 
         # ---- Step 3: Output ----
         self._make_section_header(self.main_frame, "③ Output Settings")
@@ -528,14 +555,17 @@ class XTRCTRApp(ctk.CTk):
     # --------------------------------------------------------
     # HELPERS
     # --------------------------------------------------------
-    def _make_section_header(self, parent, text: str):
+    def _make_section_header(self, parent, text: str, pack: bool = True):
         lbl = ctk.CTkLabel(
             parent,
             text=text,
             font=ctk.CTkFont(family="Segoe UI", size=15, weight="bold"),
             text_color=TEXT_PRIMARY,
         )
-        lbl.pack(anchor="w", pady=(8, 4))
+        if pack:
+            lbl.pack(anchor="w", pady=(8, 4))
+        else:
+            lbl.pack(side="left", pady=(8, 4))
 
     def _log(self, msg: str, tag: str = ""):
         self.log_box.configure(state="normal")
@@ -553,9 +583,13 @@ class XTRCTRApp(ctk.CTk):
     def _toggle_ui(self, enabled: bool):
         state = "normal" if enabled else "disabled"
         self.btn_select.configure(state=state)
+        self.btn_clear.configure(state=state)
         self.btn_output.configure(state=state)
         self.btn_extract.configure(state=state)
-        self.page_entry.configure(state=state)
+        # self.page_entry.configure(state=state) # Removed
+        for item in self.file_items:
+            item["entry"].configure(state=state)
+        self.btn_apply_all.configure(state=state)
 
     def _prompt_filename(self, suggested_name: str, page_label: str) -> str:
         """
@@ -649,28 +683,67 @@ class XTRCTRApp(ctk.CTk):
     # --------------------------------------------------------
     def _select_files(self):
         filepaths = filedialog.askopenfilenames(
-            title="Select PDF Files",
+            title="Add PDF Files",
             filetypes=[("PDF Files", "*.pdf"), ("All Files", "*.*")],
         )
         if filepaths:
-            self.loaded_pdfs = list(filepaths)
+            added_count = 0
+            for fp in filepaths:
+                if fp not in self.loaded_pdfs:
+                    self.loaded_pdfs.append(fp)
+                    added_count += 1
+            
+            if added_count == 0:
+                return
+
             names = [os.path.basename(f) for f in self.loaded_pdfs]
             display = ", ".join(names)
             if len(display) > 80:
                 display = display[:77] + "..."
+            
             self.file_label.configure(
                 text=f"📎 {len(self.loaded_pdfs)} file(s): {display}",
                 text_color=ACCENT_SUCCESS,
             )
-            self._log(f"Selected {len(self.loaded_pdfs)} PDF(s): {', '.join(names)}")
+            self.btn_clear.pack(side="left", padx=(12, 0))
+            self._log(f"Added {added_count} PDF(s). Total: {len(self.loaded_pdfs)}")
 
-            # Show page counts for each PDF
-            for fp in self.loaded_pdfs:
+            # Show info for new files
+            for fp in filepaths:
                 try:
                     r = PdfReader(fp)
                     self._log(f"  📄 {os.path.basename(fp)} → {len(r.pages)} pages")
                 except Exception:
-                    self._log(f"  ⚠️ {os.path.basename(fp)} → could not read page count")
+                    pass
+            
+            self._update_file_list_ui()
+
+    def _clear_files(self):
+        """Reset the entire file list."""
+        if not self.loaded_pdfs:
+            return
+        
+        self.loaded_pdfs = []
+        self.file_label.configure(text="No files selected", text_color=TEXT_MUTED)
+        self.btn_clear.pack_forget()
+        self._log("Cleared all files.")
+        self._update_file_list_ui()
+
+    def _remove_file(self, pdf_path: str):
+        """Remove a single file from the list."""
+        if pdf_path in self.loaded_pdfs:
+            self.loaded_pdfs.remove(pdf_path)
+            self._log(f"Removed: {os.path.basename(pdf_path)}")
+            
+            if not self.loaded_pdfs:
+                self._clear_files()
+            else:
+                names = [os.path.basename(f) for f in self.loaded_pdfs]
+                display = ", ".join(names)
+                if len(display) > 80:
+                    display = display[:77] + "..."
+                self.file_label.configure(text=f"📎 {len(self.loaded_pdfs)} file(s): {display}")
+                self._update_file_list_ui()
 
     def _select_output(self):
         folder = filedialog.askdirectory(title="Select Output Folder")
@@ -682,6 +755,103 @@ class XTRCTRApp(ctk.CTk):
             )
             self._log(f"Output folder: {folder}")
 
+    def _update_file_list_ui(self):
+        """Populate the scrollable frame with a row for each selected PDF."""
+        # Clear existing items
+        for widget in self.files_scroll_frame.winfo_children():
+            widget.destroy()
+        self.file_items = []
+
+        if not self.loaded_pdfs:
+            self.empty_files_label = ctk.CTkLabel(
+                self.files_scroll_frame,
+                text="Please select PDF files first...",
+                font=ctk.CTkFont(size=13, slant="italic"),
+                text_color=TEXT_MUTED,
+            )
+            self.empty_files_label.pack(pady=40)
+            self.btn_apply_all.pack_forget()
+            return
+
+        self.btn_apply_all.pack(side="right", padx=(0, 4), pady=(8, 4))
+
+        for idx, pdf_path in enumerate(self.loaded_pdfs):
+            name = os.path.basename(pdf_path)
+            try:
+                reader = PdfReader(pdf_path)
+                page_count = len(reader.pages)
+            except Exception:
+                page_count = "?"
+
+            item_frame = ctk.CTkFrame(self.files_scroll_frame, fg_color="transparent")
+            item_frame.pack(fill="x", pady=2)
+
+            # Left side: Remove button
+            btn_remove = ctk.CTkButton(
+                item_frame,
+                text="❌",
+                font=ctk.CTkFont(size=10),
+                fg_color="transparent",
+                text_color=ACCENT_DANGER,
+                hover_color=BG_DARK,
+                width=24,
+                height=24,
+                corner_radius=4,
+                command=lambda p=pdf_path: self._remove_file(p),
+            )
+            btn_remove.pack(side="left", padx=(4, 0))
+
+            # Icon and Name
+            name_label = ctk.CTkLabel(
+                item_frame,
+                text=f"📄 {name}",
+                font=ctk.CTkFont(size=13, weight="bold"),
+                text_color=TEXT_PRIMARY,
+                anchor="w",
+                width=260,
+            )
+            name_label.pack(side="left", padx=(8, 12))
+
+            # Middle: Page count
+            count_label = ctk.CTkLabel(
+                item_frame,
+                text=f"({page_count} pgs)",
+                font=ctk.CTkFont(size=11),
+                text_color=TEXT_MUTED,
+                width=60,
+            )
+            count_label.pack(side="left")
+
+            # Right side: Entry field
+            entry = ctk.CTkEntry(
+                item_frame,
+                placeholder_text="e.g. 1, 3-5, all",
+                font=ctk.CTkFont(size=13),
+                fg_color=BG_INPUT,
+                border_color=ACCENT_PRIMARY,
+                height=32,
+                corner_radius=8,
+            )
+            entry.pack(side="right", padx=(12, 8), fill="x", expand=True)
+            entry.insert(0, "all") # Default to 'all'
+
+            self.file_items.append({
+                "path": pdf_path,
+                "entry": entry,
+                "pages": page_count
+            })
+
+    def _apply_first_range_to_all(self):
+        """Helper to copy the first file's page range to all other files."""
+        if not self.file_items:
+            return
+        
+        first_val = self.file_items[0]["entry"].get().strip()
+        for item in self.file_items[1:]:
+            item["entry"].delete(0, "end")
+            item["entry"].insert(0, first_val)
+        self._log(f"Applied range '{first_val}' to all files.")
+
     # --------------------------------------------------------
     # EXTRACTION LOGIC
     # --------------------------------------------------------
@@ -690,17 +860,25 @@ class XTRCTRApp(ctk.CTk):
             return
 
         # Validate inputs
-        if not self.loaded_pdfs:
+        if not self.file_items:
             messagebox.showwarning("No Files", "Please select at least one PDF file.")
             return
 
-        page_text = self.page_entry.get().strip()
-        if not page_text:
-            messagebox.showwarning("No Pages", "Please enter the pages you want to extract.")
-            return
+        # Collect and validate all page ranges
+        extraction_plan = []
+        for item in self.file_items:
+            path = item["path"]
+            page_text = item["entry"].get().strip()
+            if not page_text:
+                messagebox.showwarning(
+                    "Missing Input", 
+                    f"Please enter pages for {os.path.basename(path)} or remove it."
+                )
+                return
+            extraction_plan.append((path, page_text))
 
         # Verify files still exist
-        missing = [f for f in self.loaded_pdfs if not os.path.isfile(f)]
+        missing = [f for f, _ in extraction_plan if not os.path.isfile(f)]
         if missing:
             messagebox.showerror("Missing Files", f"These files no longer exist:\n{chr(10).join(missing)}")
             return
@@ -711,15 +889,15 @@ class XTRCTRApp(ctk.CTk):
         self._set_progress(0)
 
         # Run in thread to keep GUI responsive
-        thread = threading.Thread(target=self._extraction_worker, args=(page_text,), daemon=True)
+        thread = threading.Thread(target=self._extraction_worker, args=(extraction_plan,), daemon=True)
         thread.start()
 
-    def _extraction_worker(self, page_text: str):
+    def _extraction_worker(self, extraction_plan: list[tuple[str, str]]):
         try:
-            total_pdfs = len(self.loaded_pdfs)
+            total_pdfs = len(extraction_plan)
             all_results = []
 
-            for pdf_idx, pdf_path in enumerate(self.loaded_pdfs):
+            for pdf_idx, (pdf_path, page_text) in enumerate(extraction_plan):
                 pdf_name = os.path.basename(pdf_path)
                 base_name = os.path.splitext(pdf_name)[0]
                 self._log(f"━━━ Processing: {pdf_name} ━━━")
