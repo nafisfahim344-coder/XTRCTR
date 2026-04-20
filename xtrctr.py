@@ -18,6 +18,9 @@ from datetime import datetime
 import customtkinter as ctk
 from tkinter import filedialog, messagebox
 from pypdf import PdfReader, PdfWriter
+import fitz  # PyMuPDF for PDF rendering
+from PIL import Image
+
 
 
 # ============================================================
@@ -333,6 +336,10 @@ class XTRCTRApp(ctk.CTk):
         self.file_items: list[dict] = []  # List of {path: str, entry: CTkEntry, label: CTkLabel}
         self.output_dir: str = ""
         self.is_processing = False
+        
+        # Preview State
+        self.current_preview_path = None
+        self.preview_cache = {} # {path: [CTkImage, ...]}
 
         self._build_ui()
 
@@ -340,16 +347,66 @@ class XTRCTRApp(ctk.CTk):
     # UI CONSTRUCTION
     # --------------------------------------------------------
     def _build_ui(self):
-        # Main container with padding - Now Scrollable for small displays
+        # Root container for Split View
+        self.root_container = ctk.CTkFrame(self, fg_color="transparent")
+        self.root_container.pack(fill="both", expand=True)
+
+        # ---- Left Side: Controls ----
+        self.left_panel = ctk.CTkFrame(self.root_container, fg_color="transparent")
+        self.left_panel.pack(side="left", fill="both", expand=True)
+
+        # Main scrollable container for controls
         self.main_frame = ctk.CTkScrollableFrame(
-            self, 
+            self.left_panel, 
             fg_color="transparent",
             scrollbar_button_color=ACCENT_PRIMARY,
             scrollbar_button_hover_color=ACCENT_SECONDARY
         )
         self.main_frame.pack(fill="both", expand=True, padx=12, pady=12)
 
-        # ---- Header ----
+        # ---- Right Side: Preview Panel (Hidden by default) ----
+        self.preview_panel = ctk.CTkFrame(
+            self.root_container, 
+            fg_color=BG_CARD, 
+            width=0, # Start hidden
+            corner_radius=0,
+            border_width=1,
+            border_color=BG_DARK
+        )
+        # We don't pack it yet, _toggle_preview will handle it
+
+        self.preview_header = ctk.CTkFrame(self.preview_panel, fg_color="transparent")
+        self.preview_header.pack(fill="x", padx=10, pady=10)
+
+        self.preview_title = ctk.CTkLabel(
+            self.preview_header,
+            text="预览 | Preview",
+            font=ctk.CTkFont(size=16, weight="bold"),
+            text_color=ACCENT_SECONDARY
+        )
+        self.preview_title.pack(side="left")
+
+        self.btn_close_preview = ctk.CTkButton(
+            self.preview_header,
+            text="✕",
+            width=28,
+            height=28,
+            fg_color="transparent",
+            hover_color=BG_DARK,
+            text_color=TEXT_MUTED,
+            command=self._close_preview
+        )
+        self.btn_close_preview.pack(side="right")
+
+        self.preview_scroll = ctk.CTkScrollableFrame(
+            self.preview_panel,
+            fg_color="transparent",
+            scrollbar_button_color=ACCENT_PRIMARY,
+            scrollbar_button_hover_color=ACCENT_SECONDARY
+        )
+        self.preview_scroll.pack(fill="both", expand=True, padx=5, pady=5)
+
+        # ---- Rest of Header (Inside main_frame) ----
         header = ctk.CTkFrame(self.main_frame, fg_color="transparent")
         header.pack(fill="x", pady=(0, 12))
 
@@ -683,6 +740,92 @@ class XTRCTRApp(ctk.CTk):
         event.wait()  # Block worker thread until dialog closes
         return result["name"]
 
+    def _get_pdf_page_image(self, doc: fitz.Document, page_num: int) -> ctk.CTkImage | None:
+        """Render a specific page of an open PDF document."""
+        try:
+            page = doc[page_num]
+            # Scale to fit side panel (approx 300px width)
+            # Use matrix for better quality
+            zoom = 1.2
+            pix = page.get_pixmap(matrix=fitz.Matrix(zoom, zoom))
+            img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+            
+            # Display size (smaller than original for preview feel)
+            display_w = 280
+            aspect = pix.height / pix.width
+            display_h = int(display_w * aspect)
+            
+            return ctk.CTkImage(light_image=img, dark_image=img, size=(display_w, display_h))
+        except Exception:
+            return None
+
+    def _toggle_preview(self, pdf_path: str, btn_toggle: ctk.CTkButton):
+        """Show or hide the side preview panel for a specific PDF."""
+        if self.current_preview_path == pdf_path:
+            # Already showing this file -> close it
+            self._close_preview()
+            return
+
+        # Show the panel if hidden
+        if not self.preview_panel.winfo_ismapped():
+            self.preview_panel.pack(side="right", fill="both", expand=False)
+            self.preview_panel.configure(width=340)
+
+        self.current_preview_path = pdf_path
+        self.preview_title.configure(text=f"👁️ {os.path.basename(pdf_path)}")
+        
+        # Clear previous pages
+        for widget in self.preview_scroll.winfo_children():
+            widget.destroy()
+
+        # Update button states
+        for item in self.file_items:
+            # We don't have direct access to btn_preview here unless we store it, 
+            # so let's just rely on the active highlight if we want
+            pass
+
+        # Load pages in background
+        threading.Thread(target=self._load_full_preview_worker, args=(pdf_path,), daemon=True).start()
+
+    def _close_preview(self):
+        """Hide the preview side panel."""
+        self.preview_panel.pack_forget()
+        self.current_preview_path = None
+
+    def _load_full_preview_worker(self, pdf_path: str):
+        """Worker thread to render all pages and update UI."""
+        try:
+            doc = fitz.open(pdf_path)
+            total = len(doc)
+            
+            for i in range(total):
+                if self.current_preview_path != pdf_path:
+                    break # User switched to another file
+                
+                img = self._get_pdf_page_image(doc, i)
+                if img:
+                    self.after(0, self._add_page_to_preview, i + 1, img)
+            
+            doc.close()
+        except Exception as e:
+            self.after(0, self._log, f"Error loading preview: {e}")
+
+    def _add_page_to_preview(self, page_num: int, img: ctk.CTkImage):
+        """Add a single rendered page to the scrollable preview frame."""
+        page_container = ctk.CTkFrame(self.preview_scroll, fg_color="transparent")
+        page_container.pack(pady=10, fill="x")
+
+        num_lbl = ctk.CTkLabel(
+            page_container, 
+            text=f"Page {page_num}", 
+            font=ctk.CTkFont(size=10, weight="bold"),
+            text_color=ACCENT_PRIMARY
+        )
+        num_lbl.pack()
+
+        img_lbl = ctk.CTkLabel(page_container, image=img, text="")
+        img_lbl.pack()
+
     # --------------------------------------------------------
     # FILE SELECTION
     # --------------------------------------------------------
@@ -788,8 +931,12 @@ class XTRCTRApp(ctk.CTk):
             except Exception:
                 page_count = "?"
 
-            item_frame = ctk.CTkFrame(self.files_scroll_frame, fg_color="transparent")
-            item_frame.pack(fill="x", pady=2)
+            # Container for row + preview
+            container = ctk.CTkFrame(self.files_scroll_frame, fg_color="transparent")
+            container.pack(fill="x", pady=4)
+
+            item_frame = ctk.CTkFrame(container, fg_color="transparent")
+            item_frame.pack(fill="x")
 
             # 1. Remove button
             btn_remove = ctk.CTkButton(
@@ -806,6 +953,21 @@ class XTRCTRApp(ctk.CTk):
             )
             btn_remove.pack(side="left", padx=(4, 0))
 
+            # 1.5 Preview Toggle Button
+            btn_preview = ctk.CTkButton(
+                item_frame,
+                text="👁️",
+                font=ctk.CTkFont(size=14),
+                fg_color="transparent",
+                text_color=ACCENT_SECONDARY,
+                hover_color=BG_DARK,
+                width=28,
+                height=28,
+                corner_radius=6,
+            )
+            btn_preview.configure(command=lambda p=pdf_path, b=btn_preview: self._toggle_preview(p, b))
+            btn_preview.pack(side="left", padx=(4, 0))
+
             # 2. Name
             name_label = ctk.CTkLabel(
                 item_frame,
@@ -813,7 +975,7 @@ class XTRCTRApp(ctk.CTk):
                 font=ctk.CTkFont(size=13, weight="bold"),
                 text_color=TEXT_PRIMARY,
                 anchor="w",
-                width=200,
+                width=160,
             )
             name_label.pack(side="left", padx=(8, 4))
 
@@ -871,7 +1033,9 @@ class XTRCTRApp(ctk.CTk):
                 "entry": entry,
                 "pages": page_count,
                 "output_dir": "", # Specific override
-                "folder_label": folder_label
+                "folder_label": folder_label,
+                "preview_visible": False,
+                "preview_image": None
             })
 
     def _apply_first_range_to_all(self):
