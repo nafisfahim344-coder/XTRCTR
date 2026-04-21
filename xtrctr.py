@@ -64,7 +64,38 @@ def compress_pdf_pypdf(input_path: str, output_path: str) -> bool:
         return False
 
 
-def compress_pdf_ghostscript(input_path: str, output_path: str, level: str = "/ebook") -> bool:
+def compress_pdf_fitz_rasterize(input_path: str, output_path: str, dpi: int = 150, quality: int = 70) -> bool:
+    """
+    Guaranteed compression by rasterizing every page as an image.
+    Uses PIL for robust JPEG quality control.
+    """
+    import io
+    try:
+        doc = fitz.open(input_path)
+        new_doc = fitz.open()
+        
+        for page in doc:
+            # Render page to image
+            pix = page.get_pixmap(dpi=dpi)
+            # Use PIL to compress with specific quality
+            img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+            img_byte_arr = io.BytesIO()
+            img.save(img_byte_arr, format='JPEG', quality=quality, optimize=True)
+            img_data = img_byte_arr.getvalue()
+            
+            # Create a new page with the image
+            new_page = new_doc.new_page(width=page.rect.width, height=page.rect.height)
+            new_page.insert_image(page.rect, stream=img_data)
+            
+        new_doc.save(output_path, garbage=4, deflate=True)
+        new_doc.close()
+        doc.close()
+        return True
+    except Exception:
+        return False
+
+
+def compress_pdf_ghostscript(input_path: str, output_path: str, level: str = "/ebook", dpi: int = None) -> bool:
     """Compress a PDF using Ghostscript if available on the system."""
     gs_paths = [
         shutil.which("gswin64c"),
@@ -85,9 +116,28 @@ def compress_pdf_ghostscript(input_path: str, output_path: str, level: str = "/e
             "-dNOPAUSE",
             "-dQUIET",
             "-dBATCH",
+            "-dDetectDuplicateImages=true",
+            "-dSubsetFonts=true",
+            "-dColorImageDownsampleType=/Bicubic",
+            "-dGrayImageDownsampleType=/Bicubic",
+            "-dMonoImageDownsampleType=/Bicubic",
+        ]
+        
+        if dpi:
+            command.extend([
+                f"-dColorImageResolution={dpi}",
+                f"-dGrayImageResolution={dpi}",
+                f"-dMonoImageResolution={dpi}",
+                "-dDownsampleColorImages=true",
+                "-dDownsampleGrayImages=true",
+                "-dDownsampleMonoImages=true",
+            ])
+
+        command.extend([
             f"-sOutputFile={output_path}",
             input_path,
-        ]
+        ])
+        
         subprocess.run(command, check=True, capture_output=True, timeout=120)
         return True
     except Exception:
@@ -96,10 +146,16 @@ def compress_pdf_ghostscript(input_path: str, output_path: str, level: str = "/e
 
 def smart_compress(input_path: str, output_path: str, max_mb: float = MAX_SIZE_MB) -> dict:
     """
-    Try the best available compression. Returns info dict.
-    Strategy: Try Ghostscript /ebook → /screen fallback → pypdf fallback.
+    Try the best available compression to get the file under max_mb.
+    Strategy: 
+    1. If already small enough, just copy.
+    2. Try Ghostscript /ebook -> /screen -> Aggressive DPI reduction.
+    3. If GS fails/missing, try pypdf.
+    4. If STILL over 2MB, use Fitz Rasterization (150 DPI -> 100 -> 75 -> 50).
     """
+    max_bytes = max_mb * 1024 * 1024
     original_size = os.path.getsize(input_path)
+    
     info = {
         "original_size": original_size,
         "final_size": original_size,
@@ -107,25 +163,51 @@ def smart_compress(input_path: str, output_path: str, max_mb: float = MAX_SIZE_M
         "success": True,
     }
 
-    # Try Ghostscript first (better compression)
+    # 1. Check if already small enough
+    if original_size <= max_bytes:
+        shutil.copy2(input_path, output_path)
+        info["method"] = "none (already small)"
+        return info
+
+    # Try Ghostscript first
     if compress_pdf_ghostscript(input_path, output_path, "/ebook"):
         info["method"] = "ghostscript-ebook"
         info["final_size"] = os.path.getsize(output_path)
 
-        # If still too large, try aggressive
-        if info["final_size"] > max_mb * 1024 * 1024:
+        if info["final_size"] > max_bytes:
             if compress_pdf_ghostscript(input_path, output_path, "/screen"):
                 info["method"] = "ghostscript-screen"
                 info["final_size"] = os.path.getsize(output_path)
+
+                if info["final_size"] > max_bytes:
+                    for dpi in [60, 50, 40, 30, 20]:
+                        if compress_pdf_ghostscript(input_path, output_path, "/screen", dpi=dpi):
+                            info["method"] = f"ghostscript-aggressive-{dpi}dpi"
+                            info["final_size"] = os.path.getsize(output_path)
+                            if info["final_size"] <= max_bytes:
+                                return info
     else:
-        # Fall back to pypdf compression
+        # Fall back to pypdf compression if GS is missing
         if compress_pdf_pypdf(input_path, output_path):
             info["method"] = "pypdf"
             info["final_size"] = os.path.getsize(output_path)
-        else:
-            # Last resort: copy as-is
-            shutil.copy2(input_path, output_path)
-            info["method"] = "copy"
+    
+    # 5. ULTIMATE FALLBACK: Fitz Rasterization
+    # If still over limit, or GS was missing and pypdf didn't help enough
+    if info["final_size"] > max_bytes:
+        for dpi in [150, 120, 100, 80, 60, 40]:
+            if compress_pdf_fitz_rasterize(input_path, output_path, dpi=dpi, quality=60):
+                info["method"] = f"fitz-rasterize-{dpi}dpi"
+                info["final_size"] = os.path.getsize(output_path)
+                if info["final_size"] <= max_bytes:
+                    break
+                    
+    # Last resort check
+    if info["final_size"] > max_bytes:
+        # One last desperate attempt at 30 DPI
+        if compress_pdf_fitz_rasterize(input_path, output_path, dpi=30, quality=40):
+            info["method"] = "fitz-rasterize-30dpi-low-qual"
+            info["final_size"] = os.path.getsize(output_path)
 
     return info
 
