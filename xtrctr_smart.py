@@ -253,14 +253,18 @@ class XTRCTRSmartApp(ctk.CTk):
     def __init__(self):
         super().__init__()
         self.title("XTRCTR Smart — AI Document Splitter")
-        self.geometry("950x800")
-        self.minsize(750, 600)
+        self.geometry("1250x820")
+        self.minsize(900, 700)
         self.configure(fg_color=BG_DARK)
 
         self.loaded_pdfs: list[str] = []
         self.file_items: list[dict] = []
         self.output_dir: str = ""
         self.is_processing = False
+        
+        # Preview Panel State
+        self.current_preview_id = None
+        self.preview_cache = {}
 
         # Load Config
         self.config = load_config()
@@ -273,8 +277,16 @@ class XTRCTRSmartApp(ctk.CTk):
     # UI BUILD
     # --------------------------------------------------------
     def _build_ui(self):
+        # Root container for Split View
+        self.root_container = ctk.CTkFrame(self, fg_color="transparent")
+        self.root_container.pack(fill="both", expand=True)
+
+        # ---- Left Side: Controls ----
+        self.left_panel = ctk.CTkFrame(self.root_container, fg_color="transparent")
+        self.left_panel.pack(side="left", fill="both", expand=True)
+
         self.main_frame = ctk.CTkScrollableFrame(
-            self, fg_color="transparent",
+            self.left_panel, fg_color="transparent",
             scrollbar_button_color=ACCENT_PRIMARY,
             scrollbar_button_hover_color=ACCENT_SECONDARY,
         )
@@ -434,6 +446,47 @@ class XTRCTRSmartApp(ctk.CTk):
                                   corner_radius=12, height=130, state="disabled")
         self.log.pack(fill="both", expand=True, pady=(8,0))
 
+        # ---- Right Side: Preview Panel (Hidden by default) ----
+        self.preview_panel = ctk.CTkFrame(
+            self.root_container, 
+            fg_color=BG_CARD, 
+            width=0, # Start hidden
+            corner_radius=0,
+            border_width=1,
+            border_color=BG_DARK
+        )
+
+        self.preview_header = ctk.CTkFrame(self.preview_panel, fg_color="transparent")
+        self.preview_header.pack(fill="x", padx=10, pady=10)
+
+        self.preview_title = ctk.CTkLabel(
+            self.preview_header,
+            text="预览 | Preview",
+            font=ctk.CTkFont(size=16, weight="bold"),
+            text_color=ACCENT_SECONDARY
+        )
+        self.preview_title.pack(side="left")
+
+        self.btn_close_preview = ctk.CTkButton(
+            self.preview_header,
+            text="✕",
+            width=28,
+            height=28,
+            fg_color="transparent",
+            hover_color=BG_DARK,
+            text_color=TEXT_MUTED,
+            command=self._close_preview
+        )
+        self.btn_close_preview.pack(side="right")
+
+        self.preview_scroll = ctk.CTkScrollableFrame(
+            self.preview_panel,
+            fg_color="transparent",
+            scrollbar_button_color=ACCENT_PRIMARY,
+            scrollbar_button_hover_color=ACCENT_SECONDARY
+        )
+        self.preview_scroll.pack(fill="both", expand=True, padx=5, pady=5)
+
     def _section_label(self, text):
         ctk.CTkLabel(self.main_frame, text=text,
                      font=ctk.CTkFont(family="Segoe UI", size=15, weight="bold"),
@@ -457,6 +510,113 @@ class XTRCTRSmartApp(ctk.CTk):
             item["status_lbl"].configure(text=text, text_color=color)
 
     # --------------------------------------------------------
+    # INTEGRATED SIDE PREVIEW SYSTEM
+    # --------------------------------------------------------
+    def _toggle_preview_from_row(self, pdf_path: str, sec: dict):
+        try:
+            start_page = int(sec["start_var"].get().strip())
+            end_page = int(sec["end_var"].get().strip())
+        except ValueError:
+            start_page = sec["start"]
+            end_page = sec["end"]
+        self._toggle_preview(pdf_path, start_page, end_page)
+
+    def _toggle_preview(self, pdf_path: str, start_page: int = None, end_page: int = None):
+        preview_id = (pdf_path, start_page, end_page)
+        if self.current_preview_id == preview_id:
+            self._close_preview()
+            return
+
+        if not self.preview_panel.winfo_ismapped():
+            self.preview_panel.pack(side="right", fill="both", expand=False)
+            self.preview_panel.configure(width=340)
+
+        self.current_preview_id = preview_id
+        
+        base_name = os.path.basename(pdf_path)
+        if start_page is not None and end_page is not None:
+            self.preview_title.configure(text=f"👁️ {base_name} (p.{start_page}-{end_page})")
+        else:
+            self.preview_title.configure(text=f"👁️ {base_name}")
+        
+        for widget in self.preview_scroll.winfo_children():
+            widget.destroy()
+
+        threading.Thread(target=self._load_preview_worker, args=(pdf_path, start_page, end_page, preview_id), daemon=True).start()
+
+    def _close_preview(self):
+        self.preview_panel.pack_forget()
+        self.current_preview_id = None
+
+    def _load_preview_worker(self, pdf_path: str, start_page: int, end_page: int, preview_id: tuple):
+        try:
+            doc = fitz.open(pdf_path)
+            total = len(doc)
+            
+            start_idx = (start_page - 1) if start_page is not None else 0
+            end_idx = end_page if end_page is not None else total
+            
+            start_idx = max(0, min(start_idx, total - 1))
+            end_idx = max(start_idx + 1, min(end_idx, total))
+            
+            for i in range(start_idx, end_idx):
+                if self.current_preview_id != preview_id:
+                    break 
+                
+                img = self._get_pdf_page_image(doc, i)
+                if img:
+                    self.after(0, self._add_page_to_preview, i + 1, img)
+            
+            doc.close()
+        except Exception as e:
+            self.after(0, self._log, f"Error loading preview: {e}")
+
+    def _add_page_to_preview(self, page_num: int, img: ctk.CTkImage):
+        page_container = ctk.CTkFrame(self.preview_scroll, fg_color="transparent")
+        page_container.pack(pady=10, fill="x")
+
+        num_lbl = ctk.CTkLabel(
+            page_container, 
+            text=f"Page {page_num}", 
+            font=ctk.CTkFont(size=10, weight="bold"),
+            text_color=ACCENT_PRIMARY
+        )
+        num_lbl.pack()
+
+        img_lbl = ctk.CTkLabel(page_container, image=img, text="")
+        img_lbl.pack()
+
+    def _get_pdf_page_image(self, doc: fitz.Document, page_num: int) -> ctk.CTkImage | None:
+        try:
+            page = doc[page_num]
+            zoom = 1.2
+            pix = page.get_pixmap(matrix=fitz.Matrix(zoom, zoom))
+            img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+            
+            display_w = 280
+            aspect = pix.height / pix.width
+            display_h = int(display_w * aspect)
+            
+            return ctk.CTkImage(light_image=img, dark_image=img, size=(display_w, display_h))
+        except Exception:
+            return None
+
+    def _select_output_for_file(self, pdf_path: str):
+        folder = filedialog.askdirectory(title=f"Output Folder for {os.path.basename(pdf_path)}")
+        if folder:
+            for item in self.file_items:
+                if item["path"] == pdf_path:
+                    item["output_dir"] = folder
+                    display = os.path.basename(folder)
+                    if not display: 
+                        display = folder
+                    if len(display) > 12:
+                        display = display[:9] + "..."
+                    item["folder_label"].configure(text=display, text_color=ACCENT_SUCCESS)
+                    self._log(f"Target folder for {os.path.basename(pdf_path)}: {folder}")
+                    break
+
+    # --------------------------------------------------------
     # FILE MANAGEMENT
     # --------------------------------------------------------
     def _add_files(self):
@@ -465,32 +625,63 @@ class XTRCTRSmartApp(ctk.CTk):
             filetypes=[("PDF Files", "*.pdf"), ("All Files", "*.*")])
         if not paths:
             return
+        
         added = 0
         for p in paths:
             if p not in self.loaded_pdfs:
+                # Destroy empty label if it exists
+                if len(self.loaded_pdfs) == 0 and hasattr(self, "empty_lbl") and self.empty_lbl.winfo_exists():
+                    self.empty_lbl.destroy()
+                
                 self.loaded_pdfs.append(p)
+                self._add_pdf_block(p)
                 added += 1
-        if added == 0:
-            return
-        self._refresh_file_count()
-        self.btn_clear.pack(side="left", padx=(10,0))
-        # Rebuild list for newly added files
-        self._rebuild_list_ui()
+                
+        if added > 0:
+            self._refresh_file_count()
+            self.btn_clear.pack(side="left", padx=(10,0))
 
     def _clear_all(self):
         self.loaded_pdfs.clear()
+        
+        # Safely remove all wrappers of file items
+        for item in self.file_items:
+            if item.get("wrapper") and item["wrapper"].winfo_exists():
+                item["wrapper"].destroy()
+                
         self.file_items.clear()
-        self._rebuild_list_ui()
+        self._show_empty_label()
         self._refresh_file_count()
         self.btn_clear.pack_forget()
+        self._close_preview()
 
     def _remove_pdf(self, path):
         self.loaded_pdfs = [p for p in self.loaded_pdfs if p != path]
-        self.file_items = [i for i in self.file_items if i["path"] != path]
-        self._rebuild_list_ui()
+        
+        # Destroy wrapper of removed file item
+        for item in list(self.file_items):
+            if item["path"] == path:
+                if item.get("wrapper") and item["wrapper"].winfo_exists():
+                    item["wrapper"].destroy()
+                self.file_items.remove(item)
+                
         self._refresh_file_count()
         if not self.loaded_pdfs:
+            self._show_empty_label()
             self.btn_clear.pack_forget()
+            self._close_preview()
+
+    def _show_empty_label(self):
+        if hasattr(self, "empty_lbl") and self.empty_lbl.winfo_exists():
+            self.empty_lbl.destroy()
+            
+        self.empty_lbl = ctk.CTkLabel(
+            self.list_scroll,
+            text="Add merged PDFs above — the AI will split, classify, and name them.",
+            font=ctk.CTkFont(size=13, slant="italic"),
+            text_color=TEXT_MUTED
+        )
+        self.empty_lbl.pack(pady=40)
 
     def _refresh_file_count(self):
         n = len(self.loaded_pdfs)
@@ -581,11 +772,30 @@ class XTRCTRSmartApp(ctk.CTk):
             font=ctk.CTkFont(size=12),
             fg_color="transparent", text_color=ACCENT_SECONDARY,
             hover_color=BG_DARK, width=30, height=26,
-            command=lambda p=pdf_path: os.startfile(p))
+            corner_radius=6,
+            command=lambda p=pdf_path: self._toggle_preview(p))
         preview_btn.pack(side="left", padx=(4,0))
                      
         ctk.CTkLabel(row, text=f"({pg_count} pages)",
                      font=ctk.CTkFont(size=11), text_color=TEXT_MUTED).pack(side="left", padx=(4,0))
+
+        # Per-file folder select
+        folder_btn = ctk.CTkButton(
+            row, text="📂",
+            font=ctk.CTkFont(size=12),
+            fg_color="transparent", text_color=ACCENT_PRIMARY,
+            hover_color=BG_DARK, width=28, height=26,
+            corner_radius=6,
+            command=lambda p=pdf_path: self._select_output_for_file(p)
+        )
+        folder_btn.pack(side="left", padx=(4,0))
+
+        folder_label = ctk.CTkLabel(
+            row, text="Default",
+            font=ctk.CTkFont(size=10),
+            text_color=TEXT_MUTED, width=80, anchor="w"
+        )
+        folder_label.pack(side="left", padx=(2, 8))
 
         # Detect button (manual trigger)
         item = {
@@ -593,6 +803,8 @@ class XTRCTRSmartApp(ctk.CTk):
             "wrapper": wrapper,
             "sections": [],
             "section_frame": None,
+            "output_dir": "",
+            "folder_label": folder_label,
         }
         self.file_items.append(item)
 
@@ -715,10 +927,13 @@ class XTRCTRSmartApp(ctk.CTk):
         # Editable filename
         name_var = ctk.StringVar(value=sec["title"])
         
-        entry = ctk.CTkEntry(row, textvariable=name_var,
-                             font=ctk.CTkFont(size=12, weight="bold" if is_review else "normal"),
-                             fg_color="transparent", border_width=0,
-                             height=30, text_color=ACCENT_WARNING if is_review else TEXT_PRIMARY)
+        entry = ctk.CTkEntry(
+            row, textvariable=name_var,
+            font=ctk.CTkFont(size=12, weight="bold" if is_review else "normal"),
+            fg_color=BG_DARK, border_width=1, border_color=ACCENT_PRIMARY if not is_review else ACCENT_WARNING,
+            height=28, text_color=ACCENT_WARNING if is_review else TEXT_PRIMARY,
+            corner_radius=6
+        )
         entry.pack(side="left", fill="x", expand=True, padx=(0,4))
         sec["name_var"] = name_var  # extraction reads this
 
@@ -743,6 +958,17 @@ class XTRCTRSmartApp(ctk.CTk):
         
         sec["start_var"] = start_var
         sec["end_var"] = end_var
+
+        # Quick Preview Button for Split Row
+        preview_btn = ctk.CTkButton(
+            row, text="👁️",
+            font=ctk.CTkFont(size=12),
+            fg_color="transparent", text_color=ACCENT_SECONDARY,
+            hover_color=BG_DARK, width=28, height=24,
+            corner_radius=4,
+            command=lambda p=item["path"], s=sec: self._toggle_preview_from_row(p, s)
+        )
+        preview_btn.pack(side="left", padx=(2, 4))
 
         # Remove
         def _rm(s=sec, r=row):
@@ -787,7 +1013,7 @@ class XTRCTRSmartApp(ctk.CTk):
         self.progress.set(0)
 
         plan = [{"path": i["path"], "sections": list(i["sections"]),
-                 "out_dir": self.output_dir} for i in self.file_items]
+                 "out_dir": i.get("output_dir", "") or self.output_dir} for i in self.file_items]
 
         threading.Thread(target=self._worker, args=(plan,), daemon=True).start()
 
