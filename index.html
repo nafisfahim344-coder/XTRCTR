@@ -31,7 +31,7 @@
             </div>
             <div class="nav-links">
                 <a href="#features">Features</a>
-                <a href="#interactive-demo">Live Simulator</a>
+                <a href="#compression-visualizer">Compression Visualizer</a>
                 <a href="https://github.com/nafisfahim344-coder/XTRCTR" target="_blank" class="nav-git">GitHub</a>
                 <a href="XTRCTR_Latest.exe" class="btn-nav">Download EXE</a>
             </div>
@@ -83,16 +83,16 @@
             </div>
         </section>
 
-        <!-- Live Interactive Simulator Section -->
-        <section id="interactive-demo" class="interactive-demo-section">
+        <!-- Dynamic Before & After Compression Simulator Section -->
+        <section id="compression-visualizer" class="interactive-demo-section">
             <div class="section-header">
-                <span class="section-tag">LIVE SIMULATION</span>
-                <h2>Experience XTRCTR AI in Action</h2>
-                <p>Click "Run AI Split Analysis" below to see how XTRCTR intelligently structures a single merged PDF file, extracts logical sections, runs local OCR, and fits each output target precisely under 2MB.</p>
+                <span class="section-tag">SMART SIZE OPTIMIZER</span>
+                <h2>Strict 2MB Limit Engine</h2>
+                <p>Drag the slider across the document to see XTRCTR's real-time compression binarization, vector reduction, and DPI scaling in action. Tune the parameters on the left to watch the file size adapt dynamically!</p>
             </div>
 
-            <!-- Interactive GUI Application Frame -->
-            <div class="app-simulator-container glass-card animate-up">
+            <!-- Visualizer Layout Wrapper -->
+            <div class="visualizer-app-container glass-card animate-up">
                 <!-- App Window Header -->
                 <div class="simulator-header">
                     <div class="window-dots">
@@ -100,90 +100,115 @@
                         <span class="dot dot-minimize"></span>
                         <span class="dot dot-maximize"></span>
                     </div>
-                    <div class="window-title">XTRCTR Smart AI (Premium Dashboard)</div>
-                    <div class="window-author">v1.2.0 • Standalone</div>
+                    <div class="window-title">XTRCTR Compression Core Visualizer</div>
+                    <div class="window-author">Interactive Sandbox</div>
                 </div>
 
-                <!-- App Core Dual-Pane Layout -->
-                <div class="simulator-body">
+                <div class="visualizer-body">
                     <!-- Left Control Panel -->
-                    <div class="sim-left-panel">
-                        <div class="sim-card sim-uploader">
-                            <div class="card-icon">📂</div>
-                            <div class="uploader-details">
-                                <span class="file-title">keystone_admission_merged.pdf</span>
-                                <span class="file-meta">8 Pages • 14.2 MB • Ready for scan</span>
+                    <div class="visualizer-controls">
+                        <!-- Dynamic Size Indicator Card -->
+                        <div class="sim-card size-display-card">
+                            <div class="size-detail-group">
+                                <span class="size-lbl">Estimated Output File Size</span>
+                                <h3 class="size-val-glow" id="calc-file-size">18.50 MB</h3>
                             </div>
-                            <div class="per-file-folder-btn" id="per-file-folder-indicator" onclick="simulateFolderSelect()">
-                                <span class="folder-badge">📂 Target: Global Output</span>
-                            </div>
-                        </div>
-
-                        <!-- Global Configuration -->
-                        <div class="config-grid">
-                            <div class="config-item">
-                                <label>Target Program Mode</label>
-                                <select id="sim-program-select">
-                                    <option>Auto-Detect (Let AI Decide)</option>
-                                    <option>EAP/KLP PROGRAMME (Set 1)</option>
-                                    <option>BACHELOR'S / MASTER'S (Set 2)</option>
-                                </select>
-                            </div>
-                            <div class="config-item">
-                                <label>Strict Size Limit</label>
-                                <span class="limit-value">2.0 MB Target (Auto-Binarize)</span>
+                            <div class="status-badge-container">
+                                <span class="status-badge" id="calc-status-badge">EXCEEDS LIMIT ❌</span>
                             </div>
                         </div>
 
-                        <!-- Launch Buttons -->
-                        <div class="action-row">
-                            <button class="btn-sim-primary" id="btn-run-analysis" onclick="runAISimulation()">
-                                <span class="loader-spinner" id="sim-spinner"></span>
-                                <span id="btn-text">🪄 Run AI Split Analysis</span>
-                            </button>
-                            <button class="btn-sim-secondary" onclick="resetAISimulation()">Reset View</button>
+                        <!-- Parameter Sliders -->
+                        <div class="param-slider-group">
+                            <div class="param-item">
+                                <div class="param-header">
+                                    <label>DPI Resolution</label>
+                                    <span class="param-val" id="lbl-dpi">300 DPI</span>
+                                </div>
+                                <input type="range" min="75" max="300" value="300" class="slider-param" id="input-dpi" oninput="updateCompressionEstimates()">
+                                <span class="param-desc">Higher DPI creates sharper details but massive file sizes.</span>
+                            </div>
+
+                            <div class="param-item">
+                                <div class="param-header">
+                                    <label>Image Quality</label>
+                                    <span class="param-val" id="lbl-quality">100%</span>
+                                </div>
+                                <input type="range" min="10" max="100" value="100" class="slider-param" id="input-quality" oninput="updateCompressionEstimates()">
+                                <span class="param-desc">JPEG compression ratio applied to rasterized elements.</span>
+                            </div>
+
+                            <div class="param-item">
+                                <div class="param-header">
+                                    <label>OCR Binarization Preprocessing</label>
+                                    <span class="param-val" id="lbl-binarize">OFF</span>
+                                </div>
+                                <div class="toggle-container">
+                                    <input type="checkbox" id="input-binarize" class="toggle-input" onchange="updateCompressionEstimates()">
+                                    <label for="input-binarize" class="toggle-label"></label>
+                                </div>
+                                <span class="param-desc">Converts full-color pages strictly to high-contrast black-and-white. Saves up to 80% space!</span>
+                            </div>
                         </div>
 
-                        <!-- Dynamic Split Proposals Output List -->
-                        <div class="split-proposals-header" id="proposals-title" style="display: none;">
-                            <span>Proposed Splits & Classifications</span>
-                            <span class="proposals-count">3 Files Detected</span>
-                        </div>
-
-                        <div class="split-proposals-list" id="proposals-list">
-                            <!-- Populated dynamically via JS -->
-                            <div class="empty-list-placeholder" id="list-placeholder">
-                                🛸 Click "Run AI Split Analysis" to begin local OCR and Gemini structuring
+                        <!-- Quick Tuning Presets -->
+                        <div class="presets-container">
+                            <span class="presets-title">Auto-Compression Presets</span>
+                            <div class="preset-buttons">
+                                <button class="btn-preset" onclick="setPreset('raw')">Raw Merged (No Compress)</button>
+                                <button class="btn-preset" onclick="setPreset('optimized')">XTRCTR Smart Auto</button>
+                                <button class="btn-preset" onclick="setPreset('extreme')">Extreme Compress</button>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Right Integrated Preview Drawer -->
-                    <div class="sim-right-preview">
-                        <div class="preview-header">
-                            <span>👁️ Real-time Side Preview Drawer</span>
-                            <span class="page-count-badge" id="preview-page-indicator">Page: 1 / 8</span>
+                    <!-- Right Slider Viewport -->
+                    <div class="visualizer-display">
+                        <div class="display-instruction-banner">
+                            ↔ Drag slider across document to compare original vs compressed states
                         </div>
-                        <div class="preview-viewport" id="preview-viewport-content">
-                            <!-- Document Sheet -->
-                            <div class="doc-sheet" id="active-doc-sheet">
-                                <div class="doc-header">
-                                    <div class="doc-logo">🇰🇷</div>
-                                    <div class="doc-stamp">OFFICIAL DOCUMENT</div>
-                                </div>
-                                <div class="doc-body">
-                                    <div class="doc-line title-line"></div>
-                                    <div class="doc-line text-line-1"></div>
-                                    <div class="doc-line text-line-2"></div>
-                                    <div class="doc-line text-line-3"></div>
-                                    <div class="doc-line text-line-4"></div>
-                                    <div class="doc-line text-line-1" style="width: 80%;"></div>
-                                </div>
-                                <div class="doc-footer">
-                                    <span>Page ID: KLP-2026-BD</span>
-                                    <span>[SEAL OF REGISTRAR]</span>
+                        
+                        <!-- Interactive Image Comparison Box -->
+                        <div class="slider-comparison-box">
+                            <!-- Background Under Sheet (Raw Document) -->
+                            <div class="comp-sheet sheet-raw">
+                                <div class="comp-sheet-content raw-style">
+                                    <div class="comp-stamp badge-raw">18.5 MB RAW FILE</div>
+                                    <div class="comp-photo">
+                                        <div class="photo-sun"></div>
+                                        <div class="photo-mountain"></div>
+                                    </div>
+                                    <div class="comp-title">OFFICIAL ADMISSION MERGED</div>
+                                    <div class="comp-noise-bg"></div>
+                                    <div class="comp-text">
+                                        University application merged document. Contains heavy colored scanning noise, raw high-DPI rasterized assets, large background fills, and decorative color blocks.
+                                    </div>
                                 </div>
                             </div>
+
+                            <!-- Floating Over Sheet (Compressed Document) -->
+                            <div class="comp-sheet sheet-compressed" id="compressed-overlay-sheet">
+                                <div class="comp-sheet-content compressed-style">
+                                    <div class="comp-stamp badge-compressed">1.8 MB OPTIMIZED ✔</div>
+                                    <div class="comp-photo-mono">
+                                        <div class="photo-sun-mono"></div>
+                                        <div class="photo-mountain-mono"></div>
+                                    </div>
+                                    <div class="comp-title-mono">OFFICIAL ADMISSION MERGED</div>
+                                    <div class="comp-text-mono">
+                                        University application merged document. Contains heavy colored scanning noise, raw high-DPI rasterized assets, large background fills, and decorative color blocks.
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Interactive Drag Bar Slider (Invisible range overlays active visual divider) -->
+                            <div class="comparison-bar" id="comparison-bar-element">
+                                <div class="bar-handle">
+                                    <span class="bar-arrow">←</span>
+                                    <span class="bar-arrow">→</span>
+                                </div>
+                            </div>
+                            <input type="range" min="0" max="100" value="50" class="invisible-comparison-slider" id="comparison-slider" oninput="slideComparisonView()">
                         </div>
                     </div>
                 </div>
@@ -375,205 +400,95 @@
         animate();
 
         // ------------------------------------------------------------
-        // LIVE INTERACTIVE AI SIMULATION LOGIC
+        // DYNAMIC COMPRESSION SIMULATOR LOGIC
         // ------------------------------------------------------------
-        let simulationRunning = false;
-        
-        const splitMockups = [
-            {
-                id: 1,
-                title: "01_Certificate_of_Admission.pdf",
-                pages: "1-2",
-                program: "EAP/KLP",
-                size: "420 KB",
-                stamp: "🇰🇷 ADMISSION OFFICE",
-                color: "#fffae6",
-                text: "Keystone Certificate of Admission. Subject has been admitted under Full Scholarship for EAP/KLP program commencing Fall 2026."
-            },
-            {
-                id: 2,
-                title: "02_Official_Academic_Transcript.pdf",
-                pages: "3-6",
-                program: "BACHELOR'S/MASTER'S",
-                size: "1.1 MB",
-                stamp: "🏫 BOARD OF REGISTRATION",
-                color: "#e6f0ff",
-                text: "Official Academic Transcript. Cumulative GPA: 3.94 / 4.00. High honors in Computer Architecture, Neural Networks, and Distributed Systems."
-            },
-            {
-                id: 3,
-                title: "03_Family_Relation_Certificate.pdf",
-                pages: "7-8",
-                program: "Auto-Detect",
-                size: "380 KB",
-                stamp: "🏛️ NATIONAL REGISTRY",
-                color: "#ffe6e6",
-                text: "Ministry of Public Administration. Official Family Relations Statement. Subject: Nafis Fahim. Declared family bond verified."
+        function slideComparisonView() {
+            const slider = document.getElementById('comparison-slider');
+            const overlaySheet = document.getElementById('compressed-overlay-sheet');
+            const dividerBar = document.getElementById('comparison-bar-element');
+            const val = slider.value;
+
+            // Clip the top binarized sheet
+            overlaySheet.style.clipPath = `inset(0 0 0 ${val}%)`;
+            
+            // Move divider bar
+            dividerBar.style.left = `${val}%`;
+        }
+
+        function updateCompressionEstimates() {
+            const dpi = parseInt(document.getElementById('input-dpi').value);
+            const quality = parseInt(document.getElementById('input-quality').value);
+            const binarize = document.getElementById('input-binarize').checked;
+
+            // Labels update
+            document.getElementById('lbl-dpi').textContent = `${dpi} DPI`;
+            document.getElementById('lbl-quality').textContent = `${quality}%`;
+            document.getElementById('lbl-binarize').textContent = binarize ? "ON" : "OFF";
+
+            // Math formula mimicking realistic image/pdf compression sizes
+            const baseDpiFactor = Math.pow(dpi / 300, 2);
+            const qualityFactor = quality / 100;
+            const binarizeFactor = binarize ? 0.12 : 1.0; // 88% reduction for binarization (pure B&W)
+
+            let estimatedSize = 18.5 * baseDpiFactor * qualityFactor * binarizeFactor;
+            
+            // Prevent going strictly to 0
+            if (estimatedSize < 0.05) estimatedSize = 0.05;
+
+            // Display update
+            const sizeLabel = document.getElementById('calc-file-size');
+            sizeLabel.textContent = `${estimatedSize.toFixed(2)} MB`;
+
+            // Status indicator update
+            const statusBadge = document.getElementById('calc-status-badge');
+            if (estimatedSize <= 2.0) {
+                statusBadge.textContent = "PORTAL READY ✔";
+                statusBadge.className = "status-badge status-ready";
+                sizeLabel.style.color = "#34D399";
+                sizeLabel.style.textShadow = "0 0 15px rgba(52, 211, 153, 0.4)";
+            } else {
+                statusBadge.textContent = "EXCEEDS LIMIT ❌";
+                statusBadge.className = "status-badge status-rejected";
+                sizeLabel.style.color = "#F87171";
+                sizeLabel.style.textShadow = "0 0 15px rgba(248, 113, 113, 0.4)";
             }
-        ];
 
-        function simulateFolderSelect() {
-            const pathIndicator = document.getElementById('per-file-folder-indicator');
-            pathIndicator.innerHTML = `<span class="folder-badge active">📂 Target: D:\\XTRCTR\\Outputs\\Keystone\\</span>`;
-            pathIndicator.style.borderColor = "#34D399";
+            // Dynamically affect visual binarized overlay transparency or color intensity
+            const compressedContent = document.querySelector('.comp-sheet-content.compressed-style');
+            if (binarize) {
+                compressedContent.style.filter = "contrast(1.6) brightness(1.1) grayscale(1)";
+            } else {
+                // Grayscale/compression simulation
+                const scale = 1 - (quality / 100);
+                compressedContent.style.filter = `blur(${scale * 2}px) contrast(${1 + scale * 0.2})`;
+            }
         }
 
-        function selectPreviewRow(id) {
-            // Update active preview card styling in proposals list
-            const rows = document.querySelectorAll('.sim-split-row');
-            rows.forEach(r => r.classList.remove('active'));
-            const targetRow = document.getElementById(`sim-row-${id}`);
-            if (targetRow) targetRow.classList.add('active');
+        function setPreset(mode) {
+            const dpiSlider = document.getElementById('input-dpi');
+            const qualSlider = document.getElementById('input-quality');
+            const binCheckbox = document.getElementById('input-binarize');
 
-            // Update sheet mockups inside page viewport
-            const item = splitMockups.find(m => m.id === id);
-            if (!item) return;
+            if (mode === 'raw') {
+                dpiSlider.value = 300;
+                qualSlider.value = 100;
+                binCheckbox.checked = false;
+            } else if (mode === 'optimized') {
+                dpiSlider.value = 150;
+                qualSlider.value = 70;
+                binCheckbox.checked = true;
+            } else if (mode === 'extreme') {
+                dpiSlider.value = 75;
+                qualSlider.value = 30;
+                binCheckbox.checked = true;
+            }
 
-            const sheet = document.getElementById('active-doc-sheet');
-            sheet.style.opacity = 0;
-            
-            setTimeout(() => {
-                // Change sheet mockup visual styles to match active document
-                sheet.style.backgroundColor = item.color;
-                sheet.querySelector('.doc-stamp').textContent = item.stamp;
-                sheet.querySelector('.doc-logo').textContent = item.id === 1 ? "🇰🇷" : item.id === 2 ? "🏫" : "🏛️";
-                
-                // Set page text simulation
-                const bodyText = sheet.querySelector('.text-line-3');
-                bodyText.textContent = item.text;
-                bodyText.style.height = "auto";
-                bodyText.style.background = "none";
-                bodyText.style.color = "#1E293B";
-                bodyText.style.fontSize = "0.75rem";
-                bodyText.style.fontWeight = "500";
-                
-                document.getElementById('preview-page-indicator').textContent = `Pages: ${item.pages} [${item.size}]`;
-                sheet.style.opacity = 1;
-            }, 150);
+            updateCompressionEstimates();
         }
 
-        function runAISimulation() {
-            if (simulationRunning) return;
-            simulationRunning = true;
-
-            const btn = document.getElementById('btn-run-analysis');
-            const spinner = document.getElementById('sim-spinner');
-            const btnText = document.getElementById('btn-text');
-            const placeholder = document.getElementById('list-placeholder');
-            const list = document.getElementById('proposals-list');
-            const propHeader = document.getElementById('proposals-title');
-
-            btn.disabled = true;
-            spinner.classList.add('active');
-            btnText.textContent = "AI Analysis (Running Local OCR)...";
-            placeholder.style.display = 'none';
-
-            // Simulate OCR scanning process animation
-            let scanStep = 0;
-            const scanInterval = setInterval(() => {
-                scanStep++;
-                if (scanStep <= 8) {
-                    document.getElementById('preview-page-indicator').textContent = `Scanning Page ${scanStep} / 8...`;
-                } else {
-                    clearInterval(scanInterval);
-                }
-            }, 200);
-
-            // Populating proposed cards lists
-            setTimeout(() => {
-                clearInterval(scanInterval);
-                spinner.classList.remove('active');
-                btnText.textContent = "✔ Analysis Complete";
-                btn.style.background = "#34D399";
-                btn.style.boxShadow = "0 0 20px rgba(52, 211, 153, 0.4)";
-                propHeader.style.display = 'flex';
-
-                list.innerHTML = ""; // Clear
-                
-                // Add split proposals one by one with glowing animations
-                splitMockups.forEach((mock, idx) => {
-                    setTimeout(() => {
-                        const row = document.createElement('div');
-                        row.className = "sim-split-row animate-up";
-                        row.id = `sim-row-${mock.id}`;
-                        row.onclick = () => selectPreviewRow(mock.id);
-                        
-                        row.innerHTML = `
-                            <div class="row-left">
-                                <div class="row-num">#${mock.id}</div>
-                                <div class="row-inputs">
-                                    <input type="text" class="sim-entry-name" value="${mock.title}">
-                                    <div class="row-meta-inputs">
-                                        <span class="row-badge-pg">Pages: ${mock.pages}</span>
-                                        <span class="row-badge-sz">${mock.size}</span>
-                                        <span class="row-badge-prg">${mock.program}</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row-right">
-                                <button class="btn-row-preview" onclick="event.stopPropagation(); selectPreviewRow(${mock.id})">👁️ Preview</button>
-                            </div>
-                        `;
-                        
-                        list.appendChild(row);
-                        
-                        // Wake up row animation
-                        setTimeout(() => {
-                            row.classList.add('visible');
-                        }, 50);
-                        
-                        // Select the first proposal automatically once all are populated
-                        if (idx === 0) {
-                            selectPreviewRow(mock.id);
-                        }
-                    }, idx * 300);
-                });
-
-                simulationRunning = false;
-            }, 2000);
-        }
-
-        function resetAISimulation() {
-            if (simulationRunning) return;
-            
-            const btn = document.getElementById('btn-run-analysis');
-            const spinner = document.getElementById('sim-spinner');
-            const btnText = document.getElementById('btn-text');
-            const placeholder = document.getElementById('list-placeholder');
-            const list = document.getElementById('proposals-list');
-            const propHeader = document.getElementById('proposals-title');
-            const pathIndicator = document.getElementById('per-file-folder-indicator');
-
-            btn.disabled = false;
-            btn.style.background = "";
-            btn.style.boxShadow = "";
-            spinner.classList.remove('active');
-            btnText.textContent = "🪄 Run AI Split Analysis";
-            propHeader.style.display = 'none';
-            
-            pathIndicator.innerHTML = `<span class="folder-badge">📂 Target: Global Output</span>`;
-            pathIndicator.style.borderColor = "";
-
-            list.innerHTML = `
-                <div class="empty-list-placeholder" id="list-placeholder">
-                    🛸 Click "Run AI Split Analysis" to begin local OCR and Gemini structuring
-                </div>
-            `;
-
-            // Reset Right Preview Sheet to default
-            const sheet = document.getElementById('active-doc-sheet');
-            sheet.style.backgroundColor = "";
-            sheet.querySelector('.doc-stamp').textContent = "OFFICIAL DOCUMENT";
-            sheet.querySelector('.doc-logo').textContent = "🇰🇷";
-            
-            const bodyText = sheet.querySelector('.text-line-3');
-            bodyText.textContent = "";
-            bodyText.style.height = "12px";
-            bodyText.style.background = "";
-            bodyText.style.color = "";
-            
-            document.getElementById('preview-page-indicator').textContent = "Page: 1 / 8";
-        }
+        // Initialize elements
+        slideComparisonView();
+        updateCompressionEstimates();
     </script>
 </body>
 </html>
