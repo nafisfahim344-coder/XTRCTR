@@ -31,9 +31,9 @@
             </div>
             <div class="nav-links">
                 <a href="#features">Features</a>
-                <a href="#compression-visualizer">Compression Visualizer</a>
+                <a href="#ai-semantic-mapping">Semantic AI Showcase</a>
                 <a href="https://github.com/nafisfahim344-coder/XTRCTR" target="_blank" class="nav-git">GitHub</a>
-                <a href="XTRCTR_Latest.exe" class="btn-nav">Download EXE</a>
+                <a href="https://github.com/nafisfahim344-coder/XTRCTR/releases/latest/download/XTRCTR_Latest.exe" class="btn-nav">Download EXE</a>
             </div>
         </nav>
     </header>
@@ -53,7 +53,7 @@
                         Enforce a strict <span class="highlight-cyan">2MB target limit</span> per document with offline OCR precision and intelligent AI structuring.
                     </p>
                     <div class="hero-actions animate-up delay-2">
-                        <a href="XTRCTR_Latest.exe" class="btn-primary">
+                        <a href="https://github.com/nafisfahim344-coder/XTRCTR/releases/latest/download/XTRCTR_Latest.exe" class="btn-primary">
                             <span class="btn-icon">⚡</span>
                             <div class="btn-label-group">
                                 <span class="btn-title">Download Portable EXE</span>
@@ -83,16 +83,16 @@
             </div>
         </section>
 
-        <!-- Dynamic Before & After Compression Simulator Section -->
-        <section id="compression-visualizer" class="interactive-demo-section">
+        <!-- Interactive AI Semantic Mapping & Naming Showcase -->
+        <section id="ai-semantic-mapping" class="interactive-demo-section">
             <div class="section-header">
-                <span class="section-tag">SMART SIZE OPTIMIZER</span>
-                <h2>Strict 2MB Limit Engine</h2>
-                <p>Drag the slider across the document to see XTRCTR's real-time compression binarization, vector reduction, and DPI scaling in action. Tune the parameters on the left to watch the file size adapt dynamically!</p>
+                <span class="section-tag">SEMANTIC RECOGNITION</span>
+                <h2>Intelligent File Classifying & Naming</h2>
+                <p>XTRCTR's integrated Gemini 2.5 brain scans unorganized document text, matches university portal guidelines, and extracts key details instantly. Hover over document zones below to see the naming outputs in real-time!</p>
             </div>
 
-            <!-- Visualizer Layout Wrapper -->
-            <div class="visualizer-app-container glass-card animate-up">
+            <!-- Showcase Interactive Container -->
+            <div class="showcase-outer-container glass-card animate-up">
                 <!-- App Window Header -->
                 <div class="simulator-header">
                     <div class="window-dots">
@@ -100,115 +100,111 @@
                         <span class="dot dot-minimize"></span>
                         <span class="dot dot-maximize"></span>
                     </div>
-                    <div class="window-title">XTRCTR Compression Core Visualizer</div>
-                    <div class="window-author">Interactive Sandbox</div>
+                    <div class="window-title">Semantic OCR Mapping Engine</div>
+                    <div class="window-author">Interactive Blueprint</div>
                 </div>
 
-                <div class="visualizer-body">
-                    <!-- Left Control Panel -->
-                    <div class="visualizer-controls">
-                        <!-- Dynamic Size Indicator Card -->
-                        <div class="sim-card size-display-card">
-                            <div class="size-detail-group">
-                                <span class="size-lbl">Estimated Output File Size</span>
-                                <h3 class="size-val-glow" id="calc-file-size">18.50 MB</h3>
-                            </div>
-                            <div class="status-badge-container">
-                                <span class="status-badge" id="calc-status-badge">EXCEEDS LIMIT ❌</span>
-                            </div>
-                        </div>
-
-                        <!-- Parameter Sliders -->
-                        <div class="param-slider-group">
-                            <div class="param-item">
-                                <div class="param-header">
-                                    <label>DPI Resolution</label>
-                                    <span class="param-val" id="lbl-dpi">300 DPI</span>
-                                </div>
-                                <input type="range" min="75" max="300" value="300" class="slider-param" id="input-dpi" oninput="updateCompressionEstimates()">
-                                <span class="param-desc">Higher DPI creates sharper details but massive file sizes.</span>
+                <div class="showcase-body">
+                    <!-- Left: Scanned Document Mockup with Interactive Zones -->
+                    <div class="showcase-doc-side">
+                        <div class="blueprint-document">
+                            <div class="blueprint-noise"></div>
+                            
+                            <!-- Highlight Zone 1: Document Header -->
+                            <div class="hover-zone zone-purple" id="zone-1" onmouseenter="activateShowcase(1)" onmouseleave="deactivateShowcase(1)">
+                                <span class="zone-tag-label">📄 Document Type Detection</span>
                             </div>
 
-                            <div class="param-item">
-                                <div class="param-header">
-                                    <label>Image Quality</label>
-                                    <span class="param-val" id="lbl-quality">100%</span>
-                                </div>
-                                <input type="range" min="10" max="100" value="100" class="slider-param" id="input-quality" oninput="updateCompressionEstimates()">
-                                <span class="param-desc">JPEG compression ratio applied to rasterized elements.</span>
+                            <!-- Highlight Zone 2: Applicant Identity -->
+                            <div class="hover-zone zone-cyan" id="zone-2" onmouseenter="activateShowcase(2)" onmouseleave="deactivateShowcase(2)">
+                                <span class="zone-tag-label">👤 Applicant Metadata</span>
                             </div>
 
-                            <div class="param-item">
-                                <div class="param-header">
-                                    <label>OCR Binarization Preprocessing</label>
-                                    <span class="param-val" id="lbl-binarize">OFF</span>
-                                </div>
-                                <div class="toggle-container">
-                                    <input type="checkbox" id="input-binarize" class="toggle-input" onchange="updateCompressionEstimates()">
-                                    <label for="input-binarize" class="toggle-label"></label>
-                                </div>
-                                <span class="param-desc">Converts full-color pages strictly to high-contrast black-and-white. Saves up to 80% space!</span>
+                            <!-- Highlight Zone 3: Registrar Seal -->
+                            <div class="hover-zone zone-green" id="zone-3" onmouseenter="activateShowcase(3)" onmouseleave="deactivateShowcase(3)">
+                                <span class="zone-tag-label">🏛️ Official Authority Seal</span>
                             </div>
-                        </div>
 
-                        <!-- Quick Tuning Presets -->
-                        <div class="presets-container">
-                            <span class="presets-title">Auto-Compression Presets</span>
-                            <div class="preset-buttons">
-                                <button class="btn-preset" onclick="setPreset('raw')">Raw Merged (No Compress)</button>
-                                <button class="btn-preset" onclick="setPreset('optimized')">XTRCTR Smart Auto</button>
-                                <button class="btn-preset" onclick="setPreset('extreme')">Extreme Compress</button>
+                            <!-- Mock Document Text Elements -->
+                            <div class="doc-blueprint-sheet">
+                                <div class="bp-logo">🇰🇷</div>
+                                <div class="bp-title-block">
+                                    <span class="bp-main-title">CERTIFICATE OF ADMISSION</span>
+                                    <span class="bp-sub-title">Keystone University Office of Admissions</span>
+                                </div>
+                                <div class="bp-divider"></div>
+                                <div class="bp-body-block">
+                                    <p class="bp-line" style="width: 100%;"></p>
+                                    <p class="bp-line" style="width: 90%;"></p>
+                                    <p class="bp-line-highlight">This is to certify that student <span class="bp-meta-name">Nafis Fahim</span> has been admitted to the Bachelor's degree program commencing Fall 2026.</p>
+                                    <p class="bp-line" style="width: 95%;"></p>
+                                    <p class="bp-line" style="width: 85%;"></p>
+                                </div>
+                                <div class="bp-footer-block">
+                                    <div class="bp-seal-placeholder">
+                                        <div class="seal-inner">SEAL</div>
+                                    </div>
+                                    <div class="bp-footer-text">
+                                        <span>REGISTRAR GENERAL</span>
+                                        <span>ID: KLP-2026-BD</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Right Slider Viewport -->
-                    <div class="visualizer-display">
-                        <div class="display-instruction-banner">
-                            ↔ Drag slider across document to compare original vs compressed states
+                    <!-- Right: Proposed Outputs File Cards -->
+                    <div class="showcase-cards-side">
+                        <div class="cards-side-header">
+                            <span>Proposed Outputs & Classifications</span>
+                            <span class="status-indicator-badge">Scan Mode: Active</span>
                         </div>
-                        
-                        <!-- Interactive Image Comparison Box -->
-                        <div class="slider-comparison-box">
-                            <!-- Background Under Sheet (Raw Document) -->
-                            <div class="comp-sheet sheet-raw">
-                                <div class="comp-sheet-content raw-style">
-                                    <div class="comp-stamp badge-raw">18.5 MB RAW FILE</div>
-                                    <div class="comp-photo">
-                                        <div class="photo-sun"></div>
-                                        <div class="photo-mountain"></div>
-                                    </div>
-                                    <div class="comp-title">OFFICIAL ADMISSION MERGED</div>
-                                    <div class="comp-noise-bg"></div>
-                                    <div class="comp-text">
-                                        University application merged document. Contains heavy colored scanning noise, raw high-DPI rasterized assets, large background fills, and decorative color blocks.
-                                    </div>
+
+                        <div class="output-cards-list">
+                            <!-- Output Card 1 -->
+                            <div class="output-file-card" id="output-card-1" onmouseenter="activateShowcase(1)" onmouseleave="deactivateShowcase(1)">
+                                <div class="card-status-glow glow-p"></div>
+                                <div class="card-header-row">
+                                    <span class="file-num-badge badge-p">FILE #1</span>
+                                    <span class="file-size-badge">420 KB</span>
                                 </div>
+                                <h3 class="file-output-title">01_Certificate_of_Admission.pdf</h3>
+                                <div class="file-details-row">
+                                    <span class="detail-item"><b>Pages:</b> 1 - 2</span>
+                                    <span class="detail-item"><b>Target Portal:</b> EAP/KLP</span>
+                                </div>
+                                <p class="file-desc-text">Mapped automatically by recognizing <b>"Certificate of Admission"</b> header. Fits portal naming rules perfectly.</p>
                             </div>
 
-                            <!-- Floating Over Sheet (Compressed Document) -->
-                            <div class="comp-sheet sheet-compressed" id="compressed-overlay-sheet">
-                                <div class="comp-sheet-content compressed-style">
-                                    <div class="comp-stamp badge-compressed">1.8 MB OPTIMIZED ✔</div>
-                                    <div class="comp-photo-mono">
-                                        <div class="photo-sun-mono"></div>
-                                        <div class="photo-mountain-mono"></div>
-                                    </div>
-                                    <div class="comp-title-mono">OFFICIAL ADMISSION MERGED</div>
-                                    <div class="comp-text-mono">
-                                        University application merged document. Contains heavy colored scanning noise, raw high-DPI rasterized assets, large background fills, and decorative color blocks.
-                                    </div>
+                            <!-- Output Card 2 -->
+                            <div class="output-file-card" id="output-card-2" onmouseenter="activateShowcase(2)" onmouseleave="deactivateShowcase(2)">
+                                <div class="card-status-glow glow-c"></div>
+                                <div class="card-header-row">
+                                    <span class="file-num-badge badge-c">FILE #2</span>
+                                    <span class="file-size-badge">1.1 MB</span>
                                 </div>
+                                <h3 class="file-output-title">02_Nafis_Fahim_Academic_Transcript.pdf</h3>
+                                <div class="file-details-row">
+                                    <span class="detail-item"><b>Pages:</b> 3 - 6</span>
+                                    <span class="detail-item"><b>Target Portal:</b> Bachelor's / Master's</span>
+                                </div>
+                                <p class="file-desc-text">Appends applicant's name <b>"Nafis Fahim"</b> to the filename based on extracted transcript meta values.</p>
                             </div>
 
-                            <!-- Interactive Drag Bar Slider (Invisible range overlays active visual divider) -->
-                            <div class="comparison-bar" id="comparison-bar-element">
-                                <div class="bar-handle">
-                                    <span class="bar-arrow">←</span>
-                                    <span class="bar-arrow">→</span>
+                            <!-- Output Card 3 -->
+                            <div class="output-file-card" id="output-card-3" onmouseenter="activateShowcase(3)" onmouseleave="deactivateShowcase(3)">
+                                <div class="card-status-glow glow-g"></div>
+                                <div class="card-header-row">
+                                    <span class="file-num-badge badge-g">FILE #3</span>
+                                    <span class="file-size-badge">380 KB</span>
                                 </div>
+                                <h3 class="file-output-title">03_Family_Relation_Certificate.pdf</h3>
+                                <div class="file-details-row">
+                                    <span class="detail-item"><b>Pages:</b> 7 - 8</span>
+                                    <span class="detail-item"><b>Target Portal:</b> Auto-Detect</span>
+                                </div>
+                                <p class="file-desc-text">Identified through the official <b>Registrar Seal</b> signature and family metadata scan.</p>
                             </div>
-                            <input type="range" min="0" max="100" value="50" class="invisible-comparison-slider" id="comparison-slider" oninput="slideComparisonView()">
                         </div>
                     </div>
                 </div>
@@ -400,95 +396,28 @@
         animate();
 
         // ------------------------------------------------------------
-        // DYNAMIC COMPRESSION SIMULATOR LOGIC
+        // INTERACTIVE SHOWCASE ACTION
         // ------------------------------------------------------------
-        function slideComparisonView() {
-            const slider = document.getElementById('comparison-slider');
-            const overlaySheet = document.getElementById('compressed-overlay-sheet');
-            const dividerBar = document.getElementById('comparison-bar-element');
-            const val = slider.value;
-
-            // Clip the top binarized sheet
-            overlaySheet.style.clipPath = `inset(0 0 0 ${val}%)`;
-            
-            // Move divider bar
-            dividerBar.style.left = `${val}%`;
-        }
-
-        function updateCompressionEstimates() {
-            const dpi = parseInt(document.getElementById('input-dpi').value);
-            const quality = parseInt(document.getElementById('input-quality').value);
-            const binarize = document.getElementById('input-binarize').checked;
-
-            // Labels update
-            document.getElementById('lbl-dpi').textContent = `${dpi} DPI`;
-            document.getElementById('lbl-quality').textContent = `${quality}%`;
-            document.getElementById('lbl-binarize').textContent = binarize ? "ON" : "OFF";
-
-            // Math formula mimicking realistic image/pdf compression sizes
-            const baseDpiFactor = Math.pow(dpi / 300, 2);
-            const qualityFactor = quality / 100;
-            const binarizeFactor = binarize ? 0.12 : 1.0; // 88% reduction for binarization (pure B&W)
-
-            let estimatedSize = 18.5 * baseDpiFactor * qualityFactor * binarizeFactor;
-            
-            // Prevent going strictly to 0
-            if (estimatedSize < 0.05) estimatedSize = 0.05;
-
-            // Display update
-            const sizeLabel = document.getElementById('calc-file-size');
-            sizeLabel.textContent = `${estimatedSize.toFixed(2)} MB`;
-
-            // Status indicator update
-            const statusBadge = document.getElementById('calc-status-badge');
-            if (estimatedSize <= 2.0) {
-                statusBadge.textContent = "PORTAL READY ✔";
-                statusBadge.className = "status-badge status-ready";
-                sizeLabel.style.color = "#34D399";
-                sizeLabel.style.textShadow = "0 0 15px rgba(52, 211, 153, 0.4)";
-            } else {
-                statusBadge.textContent = "EXCEEDS LIMIT ❌";
-                statusBadge.className = "status-badge status-rejected";
-                sizeLabel.style.color = "#F87171";
-                sizeLabel.style.textShadow = "0 0 15px rgba(248, 113, 113, 0.4)";
+        function activateShowcase(id) {
+            // Deactivate all first to prevent multiple highlights
+            for(let i = 1; i <= 3; i++) {
+                document.getElementById(`zone-${i}`).classList.remove('active');
+                document.getElementById(`output-card-${i}`).classList.remove('active');
             }
 
-            // Dynamically affect visual binarized overlay transparency or color intensity
-            const compressedContent = document.querySelector('.comp-sheet-content.compressed-style');
-            if (binarize) {
-                compressedContent.style.filter = "contrast(1.6) brightness(1.1) grayscale(1)";
-            } else {
-                // Grayscale/compression simulation
-                const scale = 1 - (quality / 100);
-                compressedContent.style.filter = `blur(${scale * 2}px) contrast(${1 + scale * 0.2})`;
-            }
+            // Activate specific targets
+            const zone = document.getElementById(`zone-${id}`);
+            const card = document.getElementById(`output-card-${id}`);
+            if (zone) zone.classList.add('active');
+            if (card) card.classList.add('active');
         }
 
-        function setPreset(mode) {
-            const dpiSlider = document.getElementById('input-dpi');
-            const qualSlider = document.getElementById('input-quality');
-            const binCheckbox = document.getElementById('input-binarize');
-
-            if (mode === 'raw') {
-                dpiSlider.value = 300;
-                qualSlider.value = 100;
-                binCheckbox.checked = false;
-            } else if (mode === 'optimized') {
-                dpiSlider.value = 150;
-                qualSlider.value = 70;
-                binCheckbox.checked = true;
-            } else if (mode === 'extreme') {
-                dpiSlider.value = 75;
-                qualSlider.value = 30;
-                binCheckbox.checked = true;
-            }
-
-            updateCompressionEstimates();
+        function deactivateShowcase(id) {
+            const zone = document.getElementById(`zone-${id}`);
+            const card = document.getElementById(`output-card-${id}`);
+            if (zone) zone.classList.remove('active');
+            if (card) card.classList.remove('active');
         }
-
-        // Initialize elements
-        slideComparisonView();
-        updateCompressionEstimates();
     </script>
 </body>
 </html>
